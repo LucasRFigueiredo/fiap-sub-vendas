@@ -57,5 +57,5 @@ public class SaleService implements SaleUseCase {
     public List<Sale> listarVeiculosVendidos() {
         return saleRepository.findAllByStatusPagamentoOrderByPrecoVeiculoAsc(StatusPagamento.EFETUADO);
     }
-
+//teste actions
 }
