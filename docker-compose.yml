@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  postgres-vendas:
+    image: postgres:15
+    container_name: postgres-vendas
+    restart: always
+    environment:
+      POSTGRES_DB: vendasdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata-vendas:/var/lib/postgresql/data
+
+  venda-app:
+    build: .
+    container_name: venda-app
+    depends_on:
+      - postgres-vendas
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-vendas:5432/vendasdb
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+    ports:
+      - "8081:8081"
+
+volumes:
+  pgdata-vendas:
