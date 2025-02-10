@@ -29,6 +29,9 @@ jobs:
         distribution: 'temurin'
         cache: maven
 
+    - name: Dar permissão de execução para o Maven Wrapper
+      run: chmod +x ./mvnw
+
     - name: Build com Maven
       run: ./mvnw clean package --batch-mode
 
