@@ -29,6 +29,9 @@ jobs:
         distribution: 'temurin'
         cache: maven
 
+    - name: Dar permissão de execução para o Maven Wrapper
+      run: chmod +x ./mvnw
+
     - name: Build com Maven
       run: ./mvnw clean package --batch-mode
 
@@ -40,7 +43,7 @@ jobs:
 
     - name: Publicar relatório de cobertura
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: jacoco-report
         path: target/site/jacoco
