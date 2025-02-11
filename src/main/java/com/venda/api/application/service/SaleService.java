@@ -13,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -49,12 +51,26 @@ public class SaleService implements SaleUseCase {
     }
 
     @Override
-    public List<Sale> listarVeiculosDisponiveis() {
-        return saleRepository.findAllByStatusPagamentoOrderByPrecoVeiculoAsc(StatusPagamento.PENDENTE);
+    public List<VehicleResponseDTO> listarVeiculosDisponiveis() {
+        List<Sale> vendasPendentes = saleRepository.findAllByStatusPagamentoOrderByPrecoVeiculoAsc(StatusPagamento.PENDENTE);
+        return obterVeiculosCorrespondentes(vendasPendentes);
     }
 
     @Override
-    public List<Sale> listarVeiculosVendidos() {
-        return saleRepository.findAllByStatusPagamentoOrderByPrecoVeiculoAsc(StatusPagamento.EFETUADO);
+    public List<VehicleResponseDTO> listarVeiculosVendidos() {
+        List<Sale> vendasEfetuadas = saleRepository.findAllByStatusPagamentoOrderByPrecoVeiculoAsc(StatusPagamento.EFETUADO);
+        return obterVeiculosCorrespondentes(vendasEfetuadas);
+    }
+
+    private List<VehicleResponseDTO> obterVeiculosCorrespondentes(List<Sale> vendas) {
+        List<VehicleResponseDTO> todosVeiculos = vehicleClient.listarVeiculosOrdenados();
+
+        Map<Long, VehicleResponseDTO> veiculoPorId = todosVeiculos.stream()
+                .collect(Collectors.toMap(VehicleResponseDTO::getId, v -> v));
+
+        return vendas.stream()
+                .map(venda -> veiculoPorId.get(venda.getIdVehicle()))
+                .filter(vehicle -> vehicle != null)
+                .toList();
     }
 }

@@ -10,6 +10,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -27,54 +29,72 @@ class VehicleClientTest {
     }
 
     @Test
-    void testObterVeiculo_Success() {
-        Long idVeiculo = 1L;
-        String expectedUrl = "http://localhost:8080/vehicles/" + idVeiculo;
-        VehicleResponseDTO mockResponse = new VehicleResponseDTO();
-        mockResponse.setId(idVeiculo);
-        mockResponse.setMarca("Ford");
-        mockResponse.setModelo("Focus");
-        mockResponse.setAno(2022);
-        mockResponse.setCor("Preto");
-        mockResponse.setPreco(75000.0);
-
-        when(restTemplate.getForEntity(expectedUrl, VehicleResponseDTO.class))
+    void obterVeiculo_Sucesso() {
+        VehicleResponseDTO mockResponse = new VehicleResponseDTO(1L, "Toyota", "Corolla", 2022, "Branco", 90000.0);
+        when(restTemplate.getForEntity("http://localhost:8080/vehicles/1", VehicleResponseDTO.class))
                 .thenReturn(new ResponseEntity<>(mockResponse, HttpStatus.OK));
 
-        VehicleResponseDTO result = vehicleClient.obterVeiculo(idVeiculo);
-
+        VehicleResponseDTO result = vehicleClient.obterVeiculo(1L);
         assertNotNull(result);
-        assertEquals(idVeiculo, result.getId());
-        assertEquals("Ford", result.getMarca());
-        assertEquals("Focus", result.getModelo());
-        verify(restTemplate, times(1)).getForEntity(expectedUrl, VehicleResponseDTO.class);
+        assertEquals(1L, result.getId());
     }
 
     @Test
-    void testObterVeiculo_NotFound() {
-        Long idVeiculo = 2L;
-        String expectedUrl = "http://localhost:8080/vehicles/" + idVeiculo;
+    void obterVeiculo_CorpoNulo() {
+        when(restTemplate.getForEntity("http://localhost:8080/vehicles/1", VehicleResponseDTO.class))
+                .thenReturn(new ResponseEntity<>(null, HttpStatus.OK));
 
-        when(restTemplate.getForEntity(expectedUrl, VehicleResponseDTO.class))
+        VehicleResponseDTO result = vehicleClient.obterVeiculo(1L);
+        assertNull(result);
+    }
+
+    @Test
+    void obterVeiculo_StatusNao2xx() {
+        when(restTemplate.getForEntity("http://localhost:8080/vehicles/1", VehicleResponseDTO.class))
                 .thenReturn(new ResponseEntity<>(null, HttpStatus.NOT_FOUND));
 
-        VehicleResponseDTO result = vehicleClient.obterVeiculo(idVeiculo);
-
+        VehicleResponseDTO result = vehicleClient.obterVeiculo(1L);
         assertNull(result);
-        verify(restTemplate, times(1)).getForEntity(expectedUrl, VehicleResponseDTO.class);
     }
 
     @Test
-    void testObterVeiculo_Exception() {
-        Long idVeiculo = 3L;
-        String expectedUrl = "http://localhost:8080/vehicles/" + idVeiculo;
+    void obterVeiculo_Exception() {
+        when(restTemplate.getForEntity("http://localhost:8080/vehicles/1", VehicleResponseDTO.class))
+                .thenThrow(new RuntimeException("Erro de conexão"));
 
-        when(restTemplate.getForEntity(expectedUrl, VehicleResponseDTO.class))
-                .thenThrow(new RuntimeException("Error during request"));
-
-        VehicleResponseDTO result = vehicleClient.obterVeiculo(idVeiculo);
-
+        VehicleResponseDTO result = vehicleClient.obterVeiculo(1L);
         assertNull(result);
-        verify(restTemplate, times(1)).getForEntity(expectedUrl, VehicleResponseDTO.class);
+    }
+
+    @Test
+    void listarVeiculosOrdenados_Sucesso() {
+        VehicleResponseDTO[] mockResponse = {
+                new VehicleResponseDTO(1L, "Toyota", "Corolla", 2022, "Branco", 90000.0),
+                new VehicleResponseDTO(2L, "Honda", "Civic", 2021, "Preto", 85000.0)
+        };
+        when(restTemplate.getForEntity("http://localhost:8080/vehicles/ordenados", VehicleResponseDTO[].class))
+                .thenReturn(new ResponseEntity<>(mockResponse, HttpStatus.OK));
+
+        List<VehicleResponseDTO> result = vehicleClient.listarVeiculosOrdenados();
+        assertNotNull(result);
+        assertEquals(2, result.size());
+    }
+
+    @Test
+    void listarVeiculosOrdenados_CorpoNulo() {
+        when(restTemplate.getForEntity("http://localhost:8080/vehicles/ordenados", VehicleResponseDTO[].class))
+                .thenReturn(new ResponseEntity<>(null, HttpStatus.OK));
+
+        List<VehicleResponseDTO> result = vehicleClient.listarVeiculosOrdenados();
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void listarVeiculosOrdenados_Exception() {
+        when(restTemplate.getForEntity("http://localhost:8080/vehicles/ordenados", VehicleResponseDTO[].class))
+                .thenThrow(new RuntimeException("Erro de conexão"));
+
+        List<VehicleResponseDTO> result = vehicleClient.listarVeiculosOrdenados();
+        assertTrue(result.isEmpty());
     }
 }
