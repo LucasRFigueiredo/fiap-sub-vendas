@@ -20,9 +20,9 @@ services:
     depends_on:
       - postgres-vendas
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-vendas:5432/vendasdb
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_DATASOURCE_URL: jdbc:postgresql://database-1.czmuka4aqktq.us-east-1.rds.amazonaws.com:5432/postgres
+      SPRING_DATASOURCE_USERNAME: username
+      SPRING_DATASOURCE_PASSWORD: password
     ports:
       - "8081:8081"
 
