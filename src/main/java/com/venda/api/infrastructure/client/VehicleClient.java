@@ -14,7 +14,7 @@ import java.util.List;
 public class VehicleClient {
 
     private final RestTemplate restTemplate;
-    private final String vehicleServiceUrl = "http://localhost:8080/vehicles";
+    private final String vehicleServiceUrl = "http://54.211.144.92:8080/vehicles";
 
     public VehicleClient(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
