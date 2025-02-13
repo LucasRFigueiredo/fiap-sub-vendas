@@ -4,6 +4,7 @@ import com.venda.api.application.port.input.SaleUseCase;
 import com.venda.api.domain.model.Sale;
 import com.venda.api.dto.SaleRequestDTO;
 import com.venda.api.dto.SaleResponseDTO;
+import com.venda.api.dto.VehicleResponseDTO;
 import com.venda.api.dto.WebhookPagamentoDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -23,7 +24,6 @@ public class SaleController {
     public SaleResponseDTO efetuarVenda(@Valid @RequestBody SaleRequestDTO dto) {
         Sale sale = saleUseCase.efetuarVenda(dto);
         return new SaleResponseDTO(sale.getId(), sale.getCpfComprador(), sale.getDataVenda(), sale.getStatusPagamento());
-
     }
 
     @PostMapping("/webhook")
@@ -33,16 +33,12 @@ public class SaleController {
     }
 
     @GetMapping("/disponiveis")
-    public List<SaleResponseDTO> listarVeiculosDisponiveis() {
-        return saleUseCase.listarVeiculosDisponiveis().stream()
-                .map(sale -> new SaleResponseDTO(sale.getId(), sale.getCpfComprador(), sale.getDataVenda(), sale.getStatusPagamento()))
-                .toList();
+    public List<VehicleResponseDTO> listarVeiculosDisponiveis() {
+        return saleUseCase.listarVeiculosDisponiveis();
     }
 
     @GetMapping("/vendidos")
-    public List<SaleResponseDTO> listarVeiculosVendidos() {
-        return saleUseCase.listarVeiculosVendidos().stream()
-                .map(sale -> new SaleResponseDTO(sale.getId(), sale.getCpfComprador(), sale.getDataVenda(), sale.getStatusPagamento()))
-                .toList();
+    public List<VehicleResponseDTO> listarVeiculosVendidos() {
+        return saleUseCase.listarVeiculosVendidos();
     }
 }

@@ -6,8 +6,8 @@ import com.venda.api.domain.model.StatusPagamento;
 import com.venda.api.dto.SaleRequestDTO;
 import com.venda.api.dto.VehicleResponseDTO;
 import com.venda.api.dto.WebhookPagamentoDTO;
-import com.venda.api.infrastructure.client.VehicleClient;
 import com.venda.api.exception.NotFoundException;
+import com.venda.api.infrastructure.client.VehicleClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -15,11 +15,11 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.time.LocalDate;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class SaleServiceTest {
@@ -40,84 +40,92 @@ class SaleServiceTest {
 
     @Test
     void testEfetuarVenda_Success() {
-        SaleRequestDTO request = new SaleRequestDTO(2L, "12345678901", LocalDate.of(2025, 2, 3));
-        VehicleResponseDTO vehicleResponse = new VehicleResponseDTO(2L, "Toyota", "corolla", 2023, "preto", 125000.0);
+        SaleRequestDTO request = new SaleRequestDTO(1L, "12345678900", LocalDate.now());
+        VehicleResponseDTO vehicleResponse = new VehicleResponseDTO(1L, "Toyota", "Corolla", 2022, "Branco", 90000.0);
 
-        when(vehicleClient.obterVeiculo(2L)).thenReturn(vehicleResponse);
+        when(vehicleClient.obterVeiculo(1L)).thenReturn(vehicleResponse);
         when(saleRepository.save(any(Sale.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Sale sale = saleService.efetuarVenda(request);
+        Sale result = saleService.efetuarVenda(request);
 
-        assertNotNull(sale);
-        assertEquals(2L, sale.getIdVehicle());
-        assertEquals(125000.0, sale.getPrecoVeiculo());
-        verify(saleRepository).save(any(Sale.class));
+        assertNotNull(result);
+        assertEquals(1L, result.getIdVehicle());
+        assertEquals("12345678900", result.getCpfComprador());
+        assertEquals(StatusPagamento.PENDENTE, result.getStatusPagamento());
+        verify(vehicleClient, times(1)).obterVeiculo(1L);
+        verify(saleRepository, times(1)).save(any(Sale.class));
     }
 
     @Test
     void testEfetuarVenda_VehicleNotFound() {
-        SaleRequestDTO request = new SaleRequestDTO(2L, "12345678901", LocalDate.of(2025, 2, 3));
-        when(vehicleClient.obterVeiculo(2L)).thenReturn(null);
+        SaleRequestDTO request = new SaleRequestDTO(1L, "12345678900", LocalDate.now());
 
-        NotFoundException exception = assertThrows(NotFoundException.class, () -> saleService.efetuarVenda(request));
-        assertEquals("Veículo com ID 2 não encontrado.", exception.getMessage());
+        when(vehicleClient.obterVeiculo(1L)).thenReturn(null);
+
+        assertThrows(NotFoundException.class, () -> saleService.efetuarVenda(request));
+        verify(vehicleClient, times(1)).obterVeiculo(1L);
+        verify(saleRepository, never()).save(any(Sale.class));
     }
 
     @Test
     void testAtualizarStatusPagamento_Success() {
-        WebhookPagamentoDTO webhookPagamento = new WebhookPagamentoDTO(1L, StatusPagamento.EFETUADO);
-        Sale sale = new Sale();
-        sale.setId(1L);
-        sale.setStatusPagamento(StatusPagamento.PENDENTE);
+        WebhookPagamentoDTO webhook = new WebhookPagamentoDTO(1L, StatusPagamento.EFETUADO);
+        Sale sale = new Sale(1L, 1L, "12345678900", LocalDate.now(), StatusPagamento.PENDENTE, 90000.0);
 
         when(saleRepository.findById(1L)).thenReturn(Optional.of(sale));
         when(saleRepository.save(any(Sale.class))).thenReturn(sale);
 
-        saleService.atualizarStatusPagamento(webhookPagamento);
+        saleService.atualizarStatusPagamento(webhook);
 
         assertEquals(StatusPagamento.EFETUADO, sale.getStatusPagamento());
-        verify(saleRepository).save(sale);
+        verify(saleRepository, times(1)).findById(1L);
+        verify(saleRepository, times(1)).save(sale);
     }
 
     @Test
     void testAtualizarStatusPagamento_SaleNotFound() {
-        WebhookPagamentoDTO webhookPagamento = new WebhookPagamentoDTO(1L, StatusPagamento.EFETUADO);
+        WebhookPagamentoDTO webhook = new WebhookPagamentoDTO(1L, StatusPagamento.EFETUADO);
+
         when(saleRepository.findById(1L)).thenReturn(Optional.empty());
 
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> saleService.atualizarStatusPagamento(webhookPagamento));
-        assertEquals("Venda não encontrada", exception.getMessage());
+        assertThrows(RuntimeException.class, () -> saleService.atualizarStatusPagamento(webhook));
+        verify(saleRepository, times(1)).findById(1L);
+        verify(saleRepository, never()).save(any(Sale.class));
     }
 
     @Test
     void testListarVeiculosDisponiveis() {
-        Sale sale1 = new Sale();
-        sale1.setId(1L);
-        sale1.setPrecoVeiculo(100000.0);
-        Sale sale2 = new Sale();
-        sale2.setId(2L);
-        sale2.setPrecoVeiculo(150000.0);
+        Sale sale = new Sale(1L, 1L, "12345678900", LocalDate.now(), StatusPagamento.PENDENTE, 90000.0);
+        VehicleResponseDTO vehicle = new VehicleResponseDTO(1L, "Toyota", "Corolla", 2022, "Branco", 90000.0);
 
         when(saleRepository.findAllByStatusPagamentoOrderByPrecoVeiculoAsc(StatusPagamento.PENDENTE))
-                .thenReturn(Arrays.asList(sale1, sale2));
+                .thenReturn(List.of(sale));
+        when(vehicleClient.listarVeiculosOrdenados()).thenReturn(List.of(vehicle));
 
-        List<Sale> sales = saleService.listarVeiculosDisponiveis();
+        List<VehicleResponseDTO> result = saleService.listarVeiculosDisponiveis();
 
-        assertEquals(2, sales.size());
-        verify(saleRepository).findAllByStatusPagamentoOrderByPrecoVeiculoAsc(StatusPagamento.PENDENTE);
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals("Toyota", result.get(0).getMarca());
+        verify(saleRepository, times(1)).findAllByStatusPagamentoOrderByPrecoVeiculoAsc(StatusPagamento.PENDENTE);
+        verify(vehicleClient, times(1)).listarVeiculosOrdenados();
     }
 
     @Test
     void testListarVeiculosVendidos() {
-        Sale sale = new Sale();
-        sale.setId(1L);
-        sale.setPrecoVeiculo(100000.0);
+        Sale sale = new Sale(1L, 1L, "12345678900", LocalDate.now(), StatusPagamento.EFETUADO, 90000.0);
+        VehicleResponseDTO vehicle = new VehicleResponseDTO(1L, "Toyota", "Corolla", 2022, "Branco", 90000.0);
 
         when(saleRepository.findAllByStatusPagamentoOrderByPrecoVeiculoAsc(StatusPagamento.EFETUADO))
                 .thenReturn(List.of(sale));
+        when(vehicleClient.listarVeiculosOrdenados()).thenReturn(List.of(vehicle));
 
-        List<Sale> sales = saleService.listarVeiculosVendidos();
+        List<VehicleResponseDTO> result = saleService.listarVeiculosVendidos();
 
-        assertEquals(1, sales.size());
-        verify(saleRepository).findAllByStatusPagamentoOrderByPrecoVeiculoAsc(StatusPagamento.EFETUADO);
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals("Corolla", result.get(0).getModelo());
+        verify(saleRepository, times(1)).findAllByStatusPagamentoOrderByPrecoVeiculoAsc(StatusPagamento.EFETUADO);
+        verify(vehicleClient, times(1)).listarVeiculosOrdenados();
     }
 }
