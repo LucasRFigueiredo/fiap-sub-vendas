@@ -72,12 +72,13 @@ class VehicleClientTest {
                 new VehicleResponseDTO(1L, "Toyota", "Corolla", 2022, "Branco", 90000.0),
                 new VehicleResponseDTO(2L, "Honda", "Civic", 2021, "Preto", 85000.0)
         };
-        when(restTemplate.getForEntity("http://54.211.144.92:8080/vehicles/ordenados", VehicleResponseDTO[].class))
+        when(restTemplate.getForEntity("http://3.82.201.130:8080/vehicles/ordenados", VehicleResponseDTO[].class))
                 .thenReturn(new ResponseEntity<>(mockResponse, HttpStatus.OK));
 
         List<VehicleResponseDTO> result = vehicleClient.listarVeiculosOrdenados();
         assertNotNull(result);
         assertEquals(2, result.size());
+        assertEquals("Toyota", result.get(0).getMarca());
     }
 
     @Test
