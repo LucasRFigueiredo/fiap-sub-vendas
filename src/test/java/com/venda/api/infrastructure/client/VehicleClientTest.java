@@ -31,7 +31,7 @@ class VehicleClientTest {
     @Test
     void obterVeiculo_Sucesso() {
         VehicleResponseDTO mockResponse = new VehicleResponseDTO(1L, "Toyota", "Corolla", 2022, "Branco", 90000.0);
-        when(restTemplate.getForEntity("http://54.211.144.92:8080/vehicles/1", VehicleResponseDTO.class))
+        when(restTemplate.getForEntity("http://3.82.201.130:8080/vehicles/1", VehicleResponseDTO.class))
                 .thenReturn(new ResponseEntity<>(mockResponse, HttpStatus.OK));
 
         VehicleResponseDTO result = vehicleClient.obterVeiculo(1L);
@@ -41,7 +41,7 @@ class VehicleClientTest {
 
     @Test
     void obterVeiculo_CorpoNulo() {
-        when(restTemplate.getForEntity("http://54.211.144.92:8080/vehicles/1", VehicleResponseDTO.class))
+        when(restTemplate.getForEntity("http://3.82.201.130:8080/vehicles/1", VehicleResponseDTO.class))
                 .thenReturn(new ResponseEntity<>(null, HttpStatus.OK));
 
         VehicleResponseDTO result = vehicleClient.obterVeiculo(1L);
